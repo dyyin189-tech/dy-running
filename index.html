@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="dy跑步">
+<meta name="theme-color" content="#2D4A2B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>dy 跑步</title>
+<style>
+  :root {
+    --bg: #F4F1EA;
+    --ink: #1A1F1B;
+    --green-1: #2D4A2B;
+    --green-2: #4A6B3E;
+    --green-3: #8FA681;
+    --green-soft: #D5DDC9;
+    --lemon: #D4E157;
+    --orange: #E07856;
+    --line: #1A1F1B;
+    --paper: #FAFAF5;
+    --gray: #8A8A82;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", sans-serif; -webkit-font-smoothing: antialiased; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); min-height: 100vh; }
+
+  .app { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .header { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0 20px; border-bottom: 1px solid var(--line); }
+  .header h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+  .header .meta { font-size: 12px; color: var(--gray); font-variant-numeric: tabular-nums; }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--line); margin: 16px 0; }
+  .tab { padding: 14px 0; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; background: var(--paper); border-right: 1px solid var(--line); transition: all 0.15s; }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--green-1); color: var(--paper); }
+
+  .view { display: none; animation: fadeIn 0.25s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to {opacity: 1; transform: none;} }
+
+  .card { background: var(--paper); border: 1px solid var(--line); padding: 18px; margin-bottom: 12px; }
+  .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--green-2); text-transform: uppercase; margin-bottom: 8px; }
+  .big-num { font-size: 56px; font-weight: 900; line-height: 1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+  .big-unit { font-size: 14px; font-weight: 600; color: var(--gray); margin-left: 4px; }
+  .pace-line { display: flex; gap: 16px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--green-soft); font-size: 13px; }
+  .pace-line span { display: flex; flex-direction: column; gap: 2px; }
+  .pace-line b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .pace-line em { font-style: normal; color: var(--gray); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .tag { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; text-transform: uppercase; }
+  .tag-rest { background: var(--gray); color: var(--paper); }
+  .tag-easy { background: var(--green-3); color: var(--paper); }
+  .tag-tempo { background: var(--lemon); color: var(--ink); }
+  .tag-interval { background: var(--orange); color: var(--paper); }
+  .tag-long { background: var(--green-1); color: var(--paper); }
+  .tag-strength { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
+  .tag-done { background: var(--green-2); color: var(--paper); }
+  .tag-skip { background: var(--paper); color: var(--gray); border: 1px solid var(--gray); }
+
+  .btn-today { display: block; width: 100%; padding: 18px; margin-top: 16px; background: var(--green-1); color: var(--paper); border: none; font-size: 14px; font-weight: 800; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
+  .btn-today:active { background: var(--green-2); }
+  .btn-secondary { display: block; width: 100%; padding: 14px; margin-top: 8px; background: var(--paper); color: var(--ink); border: 1px solid var(--ink); font-size: 12px; font-weight: 700; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
+  .btn-secondary:active { background: var(--green-soft); }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(26,31,27,0.6); z-index: 100; display: none; align-items: flex-end; }
+  .modal-bg.active { display: flex; }
+  .modal { background: var(--bg); width: 100%; max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; max-height: 90vh; overflow-y: auto; border-top: 4px solid var(--green-1); }
+  .modal h2 { margin: 0 0 16px; font-size: 18px; font-weight: 800; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--green-2); text-transform: uppercase; margin-bottom: 6px; }
+  .field input, .field textarea, .field select { width: 100%; padding: 12px; border: 1px solid var(--line); background: var(--paper); font-size: 15px; font-family: inherit; font-variant-numeric: tabular-nums; }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .modal-actions button { padding: 12px; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--line); background: var(--paper); cursor: pointer; }
+  .modal-actions .btn-save { background: var(--green-1); color: var(--paper); border-color: var(--green-1); }
+  .modal-actions .btn-cancel { background: var(--paper); color: var(--ink); }
+
+  .week { margin-bottom: 24px; }
+  .week-header { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 2px solid var(--line); margin-bottom: 8px; }
+  .week-title { font-size: 14px; font-weight: 800; letter-spacing: 0.5px; }
+  .week-stats { font-size: 11px; color: var(--gray); font-variant-numeric: tabular-nums; }
+
+  .day-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; padding: 12px 8px; border-bottom: 1px solid var(--green-soft); align-items: center; cursor: pointer; }
+  .day-row:active { background: var(--green-soft); }
+  .day-date { font-size: 12px; font-weight: 700; }
+  .day-date small { display: block; font-size: 9px; font-weight: 500; color: var(--gray); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .day-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .day-detail { font-size: 11px; color: var(--gray); font-variant-numeric: tabular-nums; }
+  .day-actions { display: flex; gap: 4px; }
+  .day-actions button { background: var(--paper); border: 1px solid var(--line); padding: 6px 10px; font-size: 10px; font-weight: 700; cursor: pointer; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 16px; }
+  .stat-cell { background: var(--paper); padding: 16px; }
+  .stat-cell .num { font-size: 32px; font-weight: 900; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .stat-cell .lbl { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--gray); text-transform: uppercase; margin-top: 4px; }
+
+  .bar-row { display: grid; grid-template-columns: 50px 1fr 60px; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .bar-row .lbl { font-weight: 700; }
+  .bar-track { height: 16px; background: var(--green-soft); position: relative; }
+  .bar-fill { height: 100%; background: var(--green-1); }
+  .bar-val { text-align: right; font-weight: 700; }
+
+  .legend { display: flex; gap: 12px; margin: 12px 0; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; }
+
+  .today-card { background: var(--green-1); color: var(--paper); padding: 24px 20px; }
+  .today-card .card-title { color: var(--green-soft); }
+  .today-card .big-num { color: var(--paper); }
+  .today-card .big-unit { color: var(--green-soft); }
+  .today-card .pace-line { border-color: var(--green-2); }
+  .today-card .pace-line em { color: var(--green-soft); }
+  .today-card .tag { margin-bottom: 8px; }
+
+  .no-data { padding: 30px; text-align: center; color: var(--gray); font-size: 13px; }
+
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  .swatch-easy { background: var(--green-3); }
+  .swatch-tempo { background: var(--lemon); }
+  .swatch-interval { background: var(--orange); }
+  .swatch-long { background: var(--green-1); }
+  .swatch-strength { background: var(--paper); border: 1px solid var(--ink); }
+
+  .loading { padding: 60px 20px; text-align: center; color: var(--gray); font-size: 13px; letter-spacing: 1px; }
+  .install-hint { background: var(--lemon); color: var(--ink); padding: 10px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-align: center; margin-bottom: 16px; }
+
+  /* 文件输入隐藏 */
+  .file-input { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>dy 跑步</h1>
+    <div class="meta" id="dateMeta">载入中…</div>
+  </div>
+
+  <div class="install-hint">💡 iPhone 用户：点击底部「分享」→「添加到主屏幕」→ 像原生 App 一样使用</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="today">今日</div>
+    <div class="tab" data-tab="plan">课表</div>
+    <div class="tab" data-tab="data">数据</div>
+  </div>
+
+  <div class="view active" id="view-today">
+    <div id="todayContent"><div class="loading">载入课表中…</div></div>
+  </div>
+
+  <div class="view" id="view-plan">
+    <div class="legend">
+      <span><i class="swatch-easy"></i>E 跑</span>
+      <span><i class="swatch-tempo"></i>T 阈值</span>
+      <span><i class="swatch-interval"></i>I 间歇</span>
+      <span><i class="swatch-long"></i>长跑</span>
+      <span><i class="swatch-strength"></i>力量</span>
+    </div>
+    <div id="planContent"></div>
+  </div>
+
+  <div class="view" id="view-data">
+    <div class="card">
+      <div class="card-title" id="statsTitle">本月统计</div>
+      <div class="stat-grid" id="monthlyStats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">周跑量（km）</div>
+      <div id="weeklyBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">上月历史（飞书导入）</div>
+      <div id="historyList"></div>
+    </div>
+    <button class="btn-secondary" onclick="exportData()">导出 JSON 备份</button>
+    <button class="btn-secondary" onclick="importDataPrompt()">导入 JSON 备份</button>
+    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="handleImport(event)">
+    <button class="btn-secondary" onclick="if(confirm('确认清空所有本月数据？')) { localStorage.removeItem('dy_records'); location.reload(); }">清空本月数据</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="modalTitle">记录训练</h2>
+    <div class="field-row">
+      <div class="field"><label>距离 (km)</label><input type="number" step="0.01" id="mDist"></div>
+      <div class="field"><label>时长 (min)</label><input type="number" id="mTime"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>平均配速</label><input type="text" id="mPace" placeholder="6:00"></div>
+      <div class="field"><label>平均心率</label><input type="number" id="mHR"></div>
+    </div>
+    <div class="field">
+      <label>体感</label>
+      <select id="mFeel">
+        <option value="轻松拿捏">😌 轻松拿捏</option>
+        <option value="刚刚好" selected>😐 刚刚好</option>
+        <option value="没搞定">😓 没搞定</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>状态</label>
+      <select id="mStatus">
+        <option value="已完成" selected>✅ 已完成</option>
+        <option value="跳过">⏭️ 跳过</option>
+        <option value="减量完成">⚠️ 减量完成</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>备注</label>
+      <textarea id="mNote" placeholder="分段配速、跳过原因、特别观察…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">取消</button>
+      <button class="btn-skip" onclick="markSkip()">跳过</button>
+      <button class="btn-save" onclick="saveRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== 全局状态 ====================
+let SCHEDULE = [];
+let HISTORY = [];
+let WEEKS = [];
+let MONTH_LABEL = '';
+let records = JSON.parse(localStorage.getItem('dy_records') || '{}');
+let currentDate = null;
+
+// ==================== 工具 ====================
+function $(id) { return document.getElementById(id); }
+function todayStr() {
+  const d = new Date();
+  // 用本地时区，避免 toISOString 的 UTC 偏差
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function showToast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+function tagClass(t) {
+  return {rest:"tag-rest",easy:"tag-easy",tempo:"tag-tempo",interval:"tag-interval",long:"tag-long",strength:"tag-strength"}[t] || "tag-easy";
+}
+function tagLabel(t) {
+  return {rest:"休息",easy:"E 跑",tempo:"T 阈值",interval:"I 间歇",long:"长跑",strength:"力量"}[t] || "E 跑";
+}
+
+// ==================== 载入课表 ====================
+async function loadSchedule() {
+  try {
+    // 加时间戳防 SW 缓存
+    const r = await fetch('schedule.json?t=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    SCHEDULE = data.schedule || [];
+    HISTORY = data.history || [];
+    WEEKS = data.weeks || [];
+    MONTH_LABEL = data.month || '';
+    if (data.updatedAt) $('dateMeta').textContent = data.updatedAt + ' 更新';
+    $('statsTitle').textContent = (MONTH_LABEL || '本月') + ' 统计';
+    renderAll();
+  } catch (err) {
+    $('todayContent').innerHTML = '<div class="card no-data">课表载入失败：' + err.message + '<br><br>请检查网络后刷新页面</div>';
+    console.error('loadSchedule failed:', err);
+  }
+}
+
+// ==================== 渲染：今日 ====================
+function renderToday() {
+  const today = todayStr();
+  const sched = SCHEDULE.find(s => s.date === today);
+  const rec = records[today];
+
+  if (!sched) {
+    $('todayContent').innerHTML = '<div class="card no-data">不在当前课表范围内</div>';
+    return;
+  }
+
+  let html = '';
+  if (sched.tag === 'rest') {
+    html = `<div class="card today-card">
+      <div class="card-title">${sched.dow} · ${sched.date.slice(5)}</div>
+      <div class="big-num" style="color: var(--green-soft);">休</div>
+      <div style="margin-top: 16px; font-size: 13px; opacity: 0.8;">休息日。下一课：</div>
+      <div style="margin-top: 8px; font-weight: 700;">${nextDayLabel(today)}</div>
+    </div>`;
+  } else {
+    const statusTag = rec ? (rec.status === '跳过' ? '<span class="tag tag-skip">跳过</span>' : '<span class="tag tag-done">已完成</span>') : '<span class="tag tag-easy">未打卡</span>';
+    html = `<div class="card today-card">
+      <div class="card-title">${sched.dow} · ${sched.date.slice(5)} · ${tagLabel(sched.tag)}</div>
+      <div style="margin-bottom: 12px;">${statusTag}</div>
+      <div class="big-num">${sched.km}<span class="big-unit">km</span></div>
+      <div style="font-size: 16px; font-weight: 700; margin-top: 6px;">${sched.name}</div>
+      <div class="pace-line">
+        <span><em>配速</em><b>${sched.pace}</b></span>
+        <span><em>时长</em><b>${sched.min}min</b></span>
+        <span><em>区间</em><b>${sched.zone}</b></span>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; line-height: 1.5; opacity: 0.85;">${sched.note}</div>
+    </div>`;
+
+    if (rec) {
+      html += `<div class="card">
+        <div class="card-title">本次实际</div>
+        <div class="pace-line">
+          <span><em>距离</em><b>${rec.dist}km</b></span>
+          <span><em>配速</em><b>${rec.pace}</b></span>
+          ${rec.hr ? `<span><em>心率</em><b>${rec.hr}</b></span>` : ''}
+        </div>
+        <div style="margin-top: 12px; font-size: 13px;">${rec.feel} · ${rec.status}</div>
+        ${rec.note ? `<div style="margin-top: 8px; font-size: 12px; color: var(--gray); white-space: pre-wrap;">${rec.note}</div>` : ''}
+      </div>`;
+    }
+
+    html += `<button class="btn-today" onclick="openModal('${today}')">${rec ? '修改记录' : '打卡'}</button>`;
+  }
+  $('todayContent').innerHTML = html;
+}
+
+function nextDayLabel(today) {
+  for (let i = 1; i < SCHEDULE.length; i++) {
+    if (SCHEDULE[i].date > today) {
+      const s = SCHEDULE[i];
+      return `${s.date.slice(5)} ${s.dow} · ${s.name}`;
+    }
+  }
+  return '本月已结束';
+}
+
+// ==================== 渲染：课表 ====================
+function renderPlan() {
+  // 自动按 WEEKS 渲染，没定义就按 SCHEDULE 推断
+  let groups = WEEKS.length > 0 ? WEEKS.map((w, i) => {
+    const next = WEEKS[i + 1];
+    return {
+      label: w.label,
+      range: w.range,
+      days: SCHEDULE.filter(s => s.date >= w.start && s.date <= w.end)
+    };
+  }) : [{ label: '本月课表', range: '', days: SCHEDULE }];
+
+  let html = '';
+  groups.forEach(g => {
+    let planKm = 0, doneKm = 0;
+    g.days.forEach(d => {
+      planKm += d.km;
+      if (records[d.date] && records[d.date].status === '已完成') {
+        doneKm += records[d.date].dist || d.km;
+      }
+    });
+    html += `<div class="week">
+      <div class="week-header">
+        <div class="week-title">${g.label}${g.range ? ' · ' + g.range : ''}</div>
+        <div class="week-stats">${doneKm.toFixed(1)} / ${planKm.toFixed(1)} km</div>
+      </div>`;
+    g.days.forEach(d => {
+      const rec = records[d.date];
+      const statusTag = rec ? (rec.status === '跳过' ? '<span class="tag tag-skip">跳过</span>' : '<span class="tag tag-done">✓</span>') : '';
+      html += `<div class="day-row" onclick="openModal('${d.date}')">
+        <div class="day-date">${d.date.slice(5)}<small>${d.dow}</small></div>
+        <div>
+          <div class="day-name"><span class="tag ${tagClass(d.tag)}">${tagLabel(d.tag)}</span> ${d.name}</div>
+          <div class="day-detail">${d.zone} · ${d.pace} · ${d.min}min${d.km ? ' · ' + d.km + 'km' : ''}</div>
+        </div>
+        <div class="day-actions">${statusTag}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  $('planContent').innerHTML = html;
+}
+
+// ==================== 渲染：数据 ====================
+function renderData() {
+  let totalKm = 0, totalSessions = 0, tCount = 0, iCount = 0, longCount = 0;
+  Object.values(records).forEach(r => {
+    if (r.status === '已完成') {
+      totalKm += r.dist || 0;
+      totalSessions++;
+      if (r.tag === 'tempo') tCount++;
+      if (r.tag === 'interval') iCount++;
+      if (r.tag === 'long') longCount++;
+    }
+  });
+
+  $('monthlyStats').innerHTML = `
+    <div class="stat-cell"><div class="num">${totalKm.toFixed(1)}</div><div class="lbl">总跑量 km</div></div>
+    <div class="stat-cell"><div class="num">${totalSessions}</div><div class="lbl">完成训练</div></div>
+    <div class="stat-cell"><div class="num">${tCount}</div><div class="lbl">T 训练</div></div>
+    <div class="stat-cell"><div class="num">${iCount}</div><div class="lbl">I 训练</div></div>
+  `;
+
+  // 周跑量
+  let weeksForBars = WEEKS.length > 0 ? WEEKS : [{ start: SCHEDULE[0]?.date, end: SCHEDULE[SCHEDULE.length - 1]?.date, label: '整月' }];
+  const weekKms = weeksForBars.map(w => {
+    let km = 0;
+    Object.entries(records).forEach(([d, r]) => {
+      if (d >= w.start && d <= w.end && r.status === '已完成') km += r.dist || 0;
+    });
+    return km;
+  });
+  const maxKm = Math.max(...weekKms, 80);
+  let barsHtml = '';
+  weeksForBars.forEach((w, i) => {
+    const pct = weekKms[i] / maxKm * 100;
+    barsHtml += `<div class="bar-row">
+      <div class="lbl">${w.label.split(' ')[0]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width: ${pct}%"></div></div>
+      <div class="bar-val">${weekKms[i].toFixed(1)}</div>
+    </div>`;
+  });
+  $('weeklyBars').innerHTML = barsHtml;
+
+  let histHtml = '';
+  HISTORY.forEach(h => {
+    histHtml += `<div class="day-row" style="cursor: default;">
+      <div class="day-date">${h.date.slice(5)}<small>${h.date.slice(0,4)}-${h.date.slice(5,7)}</small></div>
+      <div>
+        <div class="day-name">${h.name}</div>
+        <div class="day-detail">${h.dist}km · ${h.pace}${h.hr ? ' · HR ' + h.hr : ''}</div>
+      </div>
+      <div>${h.feel}</div>
+    </div>`;
+  });
+  $('historyList').innerHTML = histHtml || '<div class="no-data">暂无历史</div>';
+}
+
+// ==================== Modal ====================
+function openModal(date) {
+  currentDate = date;
+  const sched = SCHEDULE.find(s => s.date === date);
+  const rec = records[date];
+  $('modalTitle').textContent = `${date.slice(5)} ${sched ? '· ' + sched.name : ''}`;
+  if (rec) {
+    $('mDist').value = rec.dist || '';
+    $('mTime').value = rec.time || '';
+    $('mPace').value = rec.pace || '';
+    $('mHR').value = rec.hr || '';
+    $('mFeel').value = rec.feel || '刚刚好';
+    $('mStatus').value = rec.status || '已完成';
+    $('mNote').value = rec.note || '';
+  } else {
+    $('mDist').value = sched ? sched.km : '';
+    $('mTime').value = sched ? sched.min : '';
+    $('mPace').value = sched ? sched.pace : '';
+    $('mHR').value = '';
+    $('mFeel').value = '刚刚好';
+    $('mStatus').value = '已完成';
+    $('mNote').value = '';
+  }
+  $('modalBg').classList.add('active');
+}
+function closeModal() { $('modalBg').classList.remove('active'); }
+function saveRecord() {
+  const sched = SCHEDULE.find(s => s.date === currentDate);
+  const data = {
+    dist: parseFloat($('mDist').value) || 0,
+    time: parseInt($('mTime').value) || 0,
+    pace: $('mPace').value,
+    hr: parseInt($('mHR').value) || 0,
+    feel: $('mFeel').value,
+    status: $('mStatus').value,
+    note: $('mNote').value,
+    tag: sched ? sched.tag : 'easy',
+    savedAt: new Date().toISOString()
+  };
+  if (data.dist && data.time && !data.pace) {
+    const minPerKm = data.time / data.dist;
+    const m = Math.floor(minPerKm);
+    const s = Math.round((minPerKm - m) * 60);
+    data.pace = `${m}:${String(s).padStart(2, '0')}`;
+  }
+  records[currentDate] = data;
+  localStorage.setItem('dy_records', JSON.stringify(records));
+  showToast('已保存 ✓');
+  closeModal();
+  renderAll();
+}
+function markSkip() {
+  const sched = SCHEDULE.find(s => s.date === currentDate);
+  records[currentDate] = {
+    dist: 0, time: 0, pace: '-', hr: 0,
+    feel: '-', status: '跳过',
+    note: $('mNote').value || '跳过',
+    tag: sched ? sched.tag : 'easy',
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('dy_records', JSON.stringify(records));
+  showToast('已标记跳过');
+  closeModal();
+  renderAll();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify({records, exportedAt: new Date().toISOString()}, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dy_running_${todayStr()}.json`;
+  a.click();
+  showToast('已导出');
+}
+
+function importDataPrompt() {
+  $('fileInput').click();
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.records || typeof data.records !== 'object') {
+        alert('文件格式不对，应该包含 records 字段');
+        return;
+      }
+      const merged = Object.assign({}, records, data.records);
+      if (!confirm(`即将合并 ${Object.keys(data.records).length} 条记录到现有数据，继续？`)) return;
+      records = merged;
+      localStorage.setItem('dy_records', JSON.stringify(records));
+      showToast('导入成功');
+      renderAll();
+    } catch (err) {
+      alert('解析失败：' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // 重置，允许同名文件再导入
+}
+
+// ==================== Tabs ====================
+function renderAll() {
+  renderToday();
+  renderPlan();
+  renderData();
+}
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('view-' + t.dataset.tab).classList.add('active');
+  });
+});
+$('modalBg').addEventListener('click', e => { if (e.target === $('modalBg')) closeModal(); });
+
+// ==================== 启动 ====================
+loadSchedule();
+
+// ==================== PWA Service Worker ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('SW 注册失败:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
