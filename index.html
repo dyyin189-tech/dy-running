@@ -563,11 +563,39 @@ loadSchedule();
 // ==================== PWA Service Worker ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => {
+    // 加版本号参数，强制更新到 v2（避开 iOS 26 缓存的旧 SW）
+    navigator.serviceWorker.register('sw.js?v=2').catch(err => {
       console.warn('SW 注册失败:', err);
     });
   });
 }
+
+// ==================== 全局错误兜底（防止白屏） ====================
+window.addEventListener('error', event => {
+  console.error('[全局错误]', event.error || event.message);
+});
+window.addEventListener('unhandledrejection', event => {
+  console.error('[Promise 拒绝]', event.reason);
+});
+
+// 检测到 schedule.json 加载失败超过 3 秒时，显示引导
+setTimeout(() => {
+  const tc = $('todayContent');
+  if (tc && (tc.innerHTML.includes('加载中') || tc.innerHTML.trim() === '')) {
+    tc.innerHTML = `
+      <div class="card no-data">
+        <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 加载超时</div>
+        <div style="font-size:14px;line-height:1.8;color:#666;">
+          可能原因：iOS 26 PWA 缓存污染<br><br>
+          <b>快速修复</b>：<br>
+          1️⃣ 长按主屏"dy跑步"图标 → <b>删除 App</b><br>
+          2️⃣ iPhone 设置 → Safari → 网站数据 → 删除 <code>dyyin189-tech.github.io</code><br>
+          3️⃣ Safari 打开 <a href="?bust=${Date.now()}">${location.host}/dy-running</a> → 分享 → 添加到主屏
+        </div>
+      </div>
+    `;
+  }
+}, 4000);
 </script>
 </body>
 </html>
