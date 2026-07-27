@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" yes">
+<title>dy 跑步 · 数据导出</title>
+<style>
+  :root { --bg:#F4F1EA; --ink:#1A1F1B; --green:#2D4A2B; --paper:#FAFAF5; --gray:#8A8A82; --line:#1A1F1B; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom); background:var(--bg); color:var(--ink); font-family:-apple-system,"Helvetica Neue","PingFang SC",sans-serif; min-height:100vh; }
+  .wrap { max-width:680px; margin:0 auto; padding:24px 0; }
+  h1 { font-size:20px; letter-spacing:-0.5px; margin:0 0 6px; }
+  .sub { font-size:12px; color:var(--gray); margin-bottom:24px; }
+  .card { background:var(--paper); border:1px solid var(--line); padding:18px; margin-bottom:14px; }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee; font-size:14px; }
+  .row:last-child { border-bottom:none; }
+  .row b { font-variant-numeric:tabular-nums; font-weight:700; }
+  .btn { display:block; width:100%; padding:16px; background:var(--green); color:var(--paper); border:none; border-radius:0; font-size:16px; font-weight:700; letter-spacing:1px; cursor:pointer; margin-top:14px; font-family:inherit; }
+  .btn:active { opacity:0.7; }
+  .btn-secondary { background:var(--paper); color:var(--ink); border:1px solid var(--line); }
+  pre { background:#1a1f1b; color:#d5ddc9; padding:16px; font:12px/1.5 "SF Mono","Menlo",monospace; word-break:break-all; max-height:50vh; overflow:auto; border-radius:0; white-space:pre-wrap; }
+  .status { padding:10px 14px; background:#D5DDC9; color:#2D4A2B; font-size:13px; margin-bottom:14px; border-left:4px solid var(--green); }
+  .status.err { background:#E07856; color:white; border-left-color:#a04030; }
+  .tip { font-size:11px; color:var(--gray); line-height:1.6; margin-top:14px; }
+  .badge { display:inline-block; padding:2px 8px; background:var(--green); color:var(--paper); font-size:10px; font-weight:700; letter-spacing:1px; margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📦 dy 跑步 · 数据导出</h1>
+  <div class="sub">iOS 26 PWA 缓存修复专用 · 一次性工具</div>
+
+  <div class="card">
+    <div class="status" id="status">⏳ 正在读取 localStorage...</div>
+    <div class="row"><span>存储 Key</span><b>dy_records</b></div>
+    <div class="row"><span>记录天数</span><b id="dayCount">—</b></div>
+    <div class="row"><span>总字数</span><b id="charCount">—</b></div>
+    <div class="row"><span>首次记录</span><b id="firstDate">—</b></div>
+    <div class="row"><span>最近记录</span><b id="lastDate">—</b></div>
+  </div>
+
+  <div class="card">
+    <button class="btn" id="copyBtn">📋 复制 JSON 到剪贴板</button>
+    <button class="btn btn-secondary" id="downloadBtn">💾 下载 JSON 文件</button>
+    <div class="tip">
+      <span class="badge">TIP</span>
+      推荐用「下载 JSON 文件」—— 文件直接保存到 iPhone「文件」App，发飞书给我最稳。
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--green);margin-bottom:8px;">JSON 预览</div>
+    <pre id="jsonPreview">—</pre>
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--green);margin-bottom:8px;">📊 7 月完成度预览</div>
+    <div id="monthSummary">读取中...</div>
+  </div>
+</div>
+
+<script>
+const status = document.getElementById('status');
+const dayCount = document.getElementById('dayCount');
+const charCount = document.getElementById('charCount');
+const firstDate = document.getElementById('firstDate');
+const lastDate = document.getElementById('lastDate');
+const jsonPreview = document.getElementById('jsonPreview');
+const monthSummary = document.getElementById('monthSummary');
+
+let raw = '';
+let parsed = null;
+
+function setStatus(msg, isErr) {
+  status.textContent = msg;
+  status.className = 'status' + (isErr ? ' err' : '');
+}
+
+try {
+  raw = localStorage.getItem('dy_records') || '{}';
+  parsed = JSON.parse(raw);
+  const keys = Object.keys(parsed);
+  dayCount.textContent = keys.length;
+  charCount.textContent = raw.length;
+  if (keys.length) {
+    keys.sort();
+    firstDate.textContent = keys[0];
+    lastDate.textContent = keys[keys.length - 1];
+  } else {
+    firstDate.textContent = '（无）';
+    lastDate.textContent = '（无）';
+  }
+  jsonPreview.textContent = JSON.stringify(parsed, null, 2);
+  setStatus(keys.length ? '✅ 读取成功 — ' + keys.length + ' 天记录' : '⚠️ localStorage 是空的');
+  renderMonthSummary(parsed);
+} catch (e) {
+  setStatus('❌ 读取失败：' + e.message, true);
+  jsonPreview.textContent = '错误：' + e.message;
+}
+
+function renderMonthSummary(data) {
+  const keys = Object.keys(data).sort();
+  if (!keys.length) { monthSummary.textContent = '（无数据）'; return; }
+  let done = 0, skipped = 0, totalKm = 0, byType = {};
+  keys.forEach(k => {
+    const r = data[k];
+    if (r.status === '已完成') done++;
+    if (r.status === '跳过') skipped++;
+    if (typeof r.dist === 'number') totalKm += r.dist;
+    const t = r.tag || r.type || 'unknown';
+    byType[t] = (byType[t] || 0) + 1;
+  });
+  const lines = [];
+  lines.push('总记录：' + keys.length + ' 天');
+  lines.push('已完成：' + done + ' 天');
+  lines.push('跳过：' + skipped + ' 天');
+  lines.push('累计公里：' + totalKm.toFixed(1) + ' km');
+  lines.push('---');
+  Object.entries(byType).sort((a,b)=>b[1]-a[1]).forEach(([t,n]) => {
+    lines.push('· ' + t + '：' + n + ' 次');
+  });
+  monthSummary.innerHTML = '<pre style="background:none;color:inherit;padding:0;max-height:none;font-size:13px;line-height:1.8;">' + lines.join('\n') + '</pre>';
+}
+
+document.getElementById('copyBtn').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(raw);
+    setStatus('✅ 已复制到剪贴板 — 去飞书发给巴克');
+  } catch (e) {
+    // Fallback: 选中文字让用户手动复制
+    const ta = document.createElement('textarea');
+    ta.value = raw;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); setStatus('✅ 已复制（fallback）'); }
+    catch (e2) { setStatus('❌ 复制失败 — 用下载按钮', true); }
+    document.body.removeChild(ta);
+  }
+};
+
+document.getElementById('downloadBtn').onclick = () => {
+  const blob = new Blob([raw], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = new Date().toISOString().slice(0,10);
+  a.download = 'dy_running_records_' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setStatus('✅ 已下载 — 去「文件」App 找到文件发给巴克');
+};
+</script>
+</body>
+</html>
