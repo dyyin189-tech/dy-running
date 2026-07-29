@@ -259,11 +259,20 @@ function tagLabel(t) {
 
 // ==================== 载入课表 ====================
 async function loadSchedule() {
+  const today = new Date().toISOString().slice(0, 10);
+  $('todayContent').innerHTML = '<div class="card no-data">载入中…</div>';
+
   try {
-    // 加时间戳防 SW 缓存
-    const r = await fetch('schedule.json?t=' + Date.now());
+    // 加时间戳防 SW 缓存（v3 SW 看到 ?t= 直接放行，不再拦截）
+    const r = await fetch('schedule.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
+
+    // SW v3 失败兜底会返回 { __error__: true, reason: 'sw-network-fail' }
+    if (data.__error__) {
+      throw new Error('SW 兜底返回: ' + (data.reason || 'unknown') + '（schedule.json 网络失败且无缓存）');
+    }
+
     SCHEDULE = data.schedule || [];
     HISTORY = data.history || [];
     WEEKS = data.weeks || [];
@@ -272,7 +281,16 @@ async function loadSchedule() {
     $('statsTitle').textContent = (MONTH_LABEL || '本月') + ' 统计';
     renderAll();
   } catch (err) {
-    $('todayContent').innerHTML = '<div class="card no-data">课表载入失败：' + err.message + '<br><br>请检查网络后刷新页面</div>';
+    // 显示重试 UI，不再让 UI 卡"载入中"
+    $('todayContent').innerHTML = `
+      <div class="card no-data">
+        <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 课表载入失败</div>
+        <div style="font-size:13px;color:#666;margin-bottom:14px;line-height:1.6;">${err.message}</div>
+        <button onclick="loadSchedule()" style="background:#2d5e3e;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">🔄 重新载入课表</button>
+        <div style="font-size:12px;color:#999;margin-top:14px;line-height:1.6;">如果反复失败，请删主屏 App → Safari 重新「添加到主屏幕」</div>
+      </div>
+    `;
+    $('dateMeta').textContent = today + ' · 载入失败';
     console.error('loadSchedule failed:', err);
   }
 }
@@ -563,8 +581,8 @@ loadSchedule();
 // ==================== PWA Service Worker ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // 加版本号参数，强制更新到 v2（避开 iOS 26 缓存的旧 SW）
-    navigator.serviceWorker.register('sw.js?v=2').catch(err => {
+    // 加版本号参数，强制更新到 v3（避开 iOS 26 缓存的旧 SW）
+    navigator.serviceWorker.register('sw.js?v=3').catch(err => {
       console.warn('SW 注册失败:', err);
     });
   });
@@ -578,20 +596,24 @@ window.addEventListener('unhandledrejection', event => {
   console.error('[Promise 拒绝]', event.reason);
 });
 
-// 检测到 schedule.json 加载失败超过 3 秒时，显示引导
+// 检测到 schedule.json 加载失败超过 4 秒时，显示引导（v3 SW 一般 1-2s 内完成）
 setTimeout(() => {
   const tc = $('todayContent');
-  if (tc && (tc.innerHTML.includes('加载中') || tc.innerHTML.trim() === '')) {
+  // 只在 SCHEDULE 还没加载成功时才触发
+  if (SCHEDULE.length === 0 && tc && (tc.innerHTML.includes('载入中') || tc.innerHTML.includes('加载中'))) {
     tc.innerHTML = `
       <div class="card no-data">
-        <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 加载超时</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 加载超时（4s 未返回）</div>
+        <div style="font-size:13px;line-height:1.8;color:#666;margin-bottom:12px;">
+          v3 SW 已修复 schedule.json 失败兜底问题。如果你看到这条，说明 SW 还没生效或网络被拦截。
+        </div>
         <div style="font-size:14px;line-height:1.8;color:#666;">
-          可能原因：iOS 26 PWA 缓存污染<br><br>
           <b>快速修复</b>：<br>
           1️⃣ 长按主屏"dy跑步"图标 → <b>删除 App</b><br>
-          2️⃣ iPhone 设置 → Safari → 网站数据 → 删除 <code>dyyin189-tech.github.io</code><br>
-          3️⃣ Safari 打开 <a href="?bust=${Date.now()}">${location.host}/dy-running</a> → 分享 → 添加到主屏
+          2️⃣ Safari 打开 <a href="?bust=${Date.now()}">${location.host}/dy-running</a><br>
+          3️⃣ 验证课表加载后 → 分享 → 添加到主屏
         </div>
+        <button onclick="location.reload()" style="margin-top:14px;background:#2d5e3e;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">🔄 刷新页面</button>
       </div>
     `;
   }
