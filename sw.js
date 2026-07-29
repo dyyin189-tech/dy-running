@@ -1,13 +1,18 @@
-// dy-running Service Worker · v2
-// 修复：iOS 26.5.2 PWA 缓存污染（缓存了 null 响应导致 respondWith 报错白屏）
+// dy-running Service Worker · v3
+// 修复：Safari 26 PWA fetch schedule.json 被 SW 兜底成空 {}，导致页面永远"载入中"
 //
-// 变更点：
-//   1. 只缓存 res.ok === true 的响应（之前会缓存空响应/错误响应）
-//   2. 缓存版本号 v2 → 触发 activate 自动清理 v1 旧缓存
-//   3. fetch 出错时 fallback 到 index.html 而不是直接返回 null
-//   4. 跳过非 http(s) 协议（避免拦截 chrome-extension 等无效请求）
+// 变更点（v2 → v3）：
+//   1. 缓存版本号 v2 → v3（触发 activate 自动清理 v2 旧缓存）
+//   2. schedule.json 失败时不再兜底成 '{}'，而是返回 '{"__error__":true,"reason":"sw-network-fail"}'
+//   3. schedule.json 带 ?t= 时间戳的请求直接放行（不拦截）→ 避免 SW 拦截导致缓存污染
+//   4. index.html 检测到 __error__ 会显示「重试」按钮，UI 不再永远卡"载入中"
+//
+// 保留 v2 的修复：
+//   - 只缓存 res.ok === true 的响应（避免缓存 null）
+//   - fetch 出错时 fallback 到 index.html 而不是直接返回 null
+//   - 跳过非 http(s) 协议
 
-const CACHE = 'dy-running-v2';
+const CACHE = 'dy-running-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -67,14 +72,26 @@ self.addEventListener('fetch', event => {
   // 跳过浏览器内部请求
   if (url.pathname.startsWith('/__')) return;
 
-  // —— 课表 JSON：network-first —— //
+  // —— 课表 JSON：network-first，失败时返回 __error__ 而非 '{}' —— //
   if (url.pathname.endsWith('/schedule.json') || url.pathname.endsWith('schedule.json')) {
+    // 带 ?t= 时间戳的请求 → 直接放行（绕过 SW，根治缓存污染）
+    if (url.search.includes('t=')) {
+      return; // 不调用 event.respondWith，让浏览器正常 fetch
+    }
+
     event.respondWith(
       fetch(req)
         .then(res => { safePut(caches.open(CACHE), req, res.clone()); return res; })
-        .catch(() => caches.match(req).then(r => r || new Response('{}', {
-          status: 200, headers: { 'Content-Type': 'application/json' }
-        })))
+        .catch(() => {
+          // 失败时尝试缓存，缓存也没有就返回带 __error__ 的 JSON
+          return caches.match(req).then(r => {
+            if (r) return r;
+            return new Response(
+              JSON.stringify({ __error__: true, reason: 'sw-network-fail', ts: Date.now() }),
+              { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+            );
+          });
+        })
     );
     return;
   }
