@@ -12,7 +12,7 @@
 //   - fetch 出错时 fallback 到 index.html 而不是直接返回 null
 //   - 跳过非 http(s) 协议
 
-const CACHE = 'dy-running-v3';
+const CACHE = 'dy-running-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
