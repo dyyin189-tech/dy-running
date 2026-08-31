@@ -24,6 +24,7 @@
     --line: #1A1F1B;
     --paper: #FAFAF5;
     --gray: #8A8A82;
+    --gold: #C9A227;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", sans-serif; -webkit-font-smoothing: antialiased; }
@@ -32,7 +33,12 @@
   .app { max-width: 720px; margin: 0 auto; padding: 16px; }
   .header { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0 20px; border-bottom: 1px solid var(--line); }
   .header h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
-  .header .meta { font-size: 12px; color: var(--gray); font-variant-numeric: tabular-nums; }
+  .header .meta { font-size: 12px; color: var(--gray); font-variant-numeric: tabular-nums; text-align: right; }
+
+  .race-banner { background: var(--ink); color: var(--paper); padding: 14px 16px; margin: 16px 0; display: flex; justify-content: space-between; align-items: center; }
+  .race-banner .left { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--green-3); }
+  .race-banner .right { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .race-banner .days { color: var(--lemon); font-weight: 900; font-size: 24px; margin-left: 8px; font-variant-numeric: tabular-nums; }
 
   .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid var(--line); margin: 16px 0; }
   .tab { padding: 14px 0; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; background: var(--paper); border-right: 1px solid var(--line); transition: all 0.15s; }
@@ -61,6 +67,7 @@
   .tag-strength { background: var(--paper); color: var(--ink); border: 1px solid var(--ink); }
   .tag-done { background: var(--green-2); color: var(--paper); }
   .tag-skip { background: var(--paper); color: var(--gray); border: 1px solid var(--gray); }
+  .tag-race { background: var(--ink); color: var(--lemon); border: 1px solid var(--lemon); font-size: 12px; padding: 4px 10px; }
 
   .btn-today { display: block; width: 100%; padding: 18px; margin-top: 16px; background: var(--green-1); color: var(--paper); border: none; font-size: 14px; font-weight: 800; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
   .btn-today:active { background: var(--green-2); }
@@ -88,12 +95,17 @@
 
   .day-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; padding: 12px 8px; border-bottom: 1px solid var(--green-soft); align-items: center; cursor: pointer; }
   .day-row:active { background: var(--green-soft); }
+  .day-row.is-race { background: var(--ink); color: var(--paper); border-bottom-color: var(--ink); }
+  .day-row.is-race .day-detail { color: var(--green-3); }
+  .day-row.is-race .day-name { color: var(--paper); }
   .day-date { font-size: 12px; font-weight: 700; }
   .day-date small { display: block; font-size: 9px; font-weight: 500; color: var(--gray); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .day-row.is-race .day-date small { color: var(--green-3); }
   .day-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
   .day-detail { font-size: 11px; color: var(--gray); font-variant-numeric: tabular-nums; }
   .day-actions { display: flex; gap: 4px; }
   .day-actions button { background: var(--paper); border: 1px solid var(--line); padding: 6px 10px; font-size: 10px; font-weight: 700; cursor: pointer; }
+  .day-row.is-race .day-actions button { background: var(--paper); }
 
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 16px; }
   .stat-cell { background: var(--paper); padding: 16px; }
@@ -118,6 +130,25 @@
   .today-card .pace-line em { color: var(--green-soft); }
   .today-card .tag { margin-bottom: 8px; }
 
+  .today-card.is-race { background: var(--ink); border: 2px solid var(--lemon); }
+  .today-card.is-race .card-title { color: var(--lemon); }
+
+  /* 糖原块 */
+  .glycogen-card { background: var(--lemon); color: var(--ink); border: 1px solid var(--ink); margin-bottom: 12px; }
+  .glycogen-card .card-title { color: var(--ink); }
+  .glycogen-card .meal { padding: 10px 0; border-bottom: 1px dashed var(--ink); font-size: 13px; line-height: 1.5; }
+  .glycogen-card .meal:last-child { border-bottom: none; }
+  .glycogen-card .meal-day { font-weight: 800; margin-right: 8px; }
+  .glycogen-card .meal-note { color: var(--ink); opacity: 0.8; }
+
+  /* 比赛日全景 */
+  .race-plan { background: var(--paper); border: 2px solid var(--ink); padding: 18px; margin-bottom: 16px; }
+  .race-plan h3 { font-size: 18px; font-weight: 900; margin: 0 0 12px; letter-spacing: -0.5px; }
+  .race-plan .segment { display: grid; grid-template-columns: 80px 1fr 70px; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .race-plan .segment:last-child { border-bottom: none; }
+  .race-plan .seg-range { font-weight: 700; }
+  .race-plan .seg-pace { text-align: right; font-weight: 800; color: var(--green-1); }
+
   .no-data { padding: 30px; text-align: center; color: var(--gray); font-size: 13px; }
 
   .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
@@ -134,6 +165,12 @@
 
   /* 文件输入隐藏 */
   .file-input { display: none; }
+
+  /* 规则列表 */
+  .rules-card { background: var(--paper); border: 1px solid var(--line); padding: 18px; margin-bottom: 12px; }
+  .rules-card h3 { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: var(--green-2); text-transform: uppercase; margin: 0 0 12px; }
+  .rule { font-size: 12px; padding: 4px 0; line-height: 1.5; color: var(--ink); }
+  .rule::before { content: "→ "; color: var(--green-1); font-weight: 800; }
 </style>
 </head>
 <body>
@@ -144,6 +181,17 @@
   </div>
 
   <div class="install-hint">💡 iPhone 用户：点击底部「分享」→「添加到主屏幕」→ 像原生 App 一样使用</div>
+
+  <div class="race-banner">
+    <div>
+      <div class="left">🏁 成都马拉松</div>
+      <div style="font-size:14px;font-weight:700;margin-top:2px;">目标 4:30 · 平均配速 6:24/km</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;color:var(--green-3);letter-spacing:1.5px;">D-DAY</div>
+      <div><span class="days" id="countdown">--</span></div>
+    </div>
+  </div>
 
   <div class="tabs">
     <div class="tab active" data-tab="today">今日</div>
@@ -164,6 +212,9 @@
       <span><i class="swatch-strength"></i>力量</span>
     </div>
     <div id="planContent"></div>
+    <div id="racePlanSection"></div>
+    <div id="glycogenSection"></div>
+    <div id="rulesSection"></div>
   </div>
 
   <div class="view" id="view-data">
@@ -233,6 +284,9 @@ let SCHEDULE = [];
 let HISTORY = [];
 let WEEKS = [];
 let MONTH_LABEL = '';
+let RACE = {};
+let GLYCOGEN = {};
+let RULES = {};
 let records = JSON.parse(localStorage.getItem('dy_records') || '{}');
 let currentDate = null;
 
@@ -240,7 +294,6 @@ let currentDate = null;
 function $(id) { return document.getElementById(id); }
 function todayStr() {
   const d = new Date();
-  // 用本地时区，避免 toISOString 的 UTC 偏差
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -251,37 +304,49 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 1800);
 }
 function tagClass(t) {
-  return {rest:"tag-rest",easy:"tag-easy",tempo:"tag-tempo",interval:"tag-interval",long:"tag-long",strength:"tag-strength"}[t] || "tag-easy";
+  return {rest:"tag-rest",easy:"tag-easy",tempo:"tag-tempo",interval:"tag-interval",long:"tag-long",strength:"tag-strength",race:"tag-race"}[t] || "tag-easy";
 }
 function tagLabel(t) {
-  return {rest:"休息",easy:"E 跑",tempo:"T 阈值",interval:"I 间歇",long:"长跑",strength:"力量"}[t] || "E 跑";
+  return {rest:"休息",easy:"E 跑",tempo:"T 阈值",interval:"I 间歇",long:"长跑",strength:"力量",race:"🏁 比赛"}[t] || "E 跑";
+}
+function daysUntilRace() {
+  if (!RACE.date) return 0;
+  const today = new Date();
+  const race = new Date(RACE.date);
+  return Math.max(0, Math.ceil((race - today) / (1000 * 60 * 60 * 24)));
 }
 
 // ==================== 载入课表 ====================
 async function loadSchedule() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   $('todayContent').innerHTML = '<div class="card no-data">载入中…</div>';
 
   try {
-    // 加时间戳防 SW 缓存（v3 SW 看到 ?t= 直接放行，不再拦截）
     const r = await fetch('schedule.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
 
-    // SW v3 失败兜底会返回 { __error__: true, reason: 'sw-network-fail' }
     if (data.__error__) {
-      throw new Error('SW 兜底返回: ' + (data.reason || 'unknown') + '（schedule.json 网络失败且无缓存）');
+      throw new Error('SW 兜底返回: ' + (data.reason || 'unknown'));
     }
 
     SCHEDULE = data.schedule || [];
     HISTORY = data.history || [];
     WEEKS = data.weeks || [];
     MONTH_LABEL = data.month || '';
+    RACE = data.race || {};
+    GLYCOGEN = data.glycogen || {};
+    RULES = data.rules || {};
     if (data.updatedAt) $('dateMeta').textContent = data.updatedAt + ' 更新';
     $('statsTitle').textContent = (MONTH_LABEL || '本月') + ' 统计';
+    
+    // 更新倒计时
+    if (RACE.date) {
+      $('countdown').textContent = daysUntilRace();
+    }
+    
     renderAll();
   } catch (err) {
-    // 显示重试 UI，不再让 UI 卡"载入中"
     $('todayContent').innerHTML = `
       <div class="card no-data">
         <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 课表载入失败</div>
@@ -307,16 +372,46 @@ function renderToday() {
   }
 
   let html = '';
+  const isRaceDay = sched.tag === 'race';
+  const cardClass = 'card today-card' + (isRaceDay ? ' is-race' : '');
+  
   if (sched.tag === 'rest') {
-    html = `<div class="card today-card">
+    html = `<div class="${cardClass}">
       <div class="card-title">${sched.dow} · ${sched.date.slice(5)}</div>
       <div class="big-num" style="color: var(--green-soft);">休</div>
       <div style="margin-top: 16px; font-size: 13px; opacity: 0.8;">休息日。下一课：</div>
       <div style="margin-top: 8px; font-weight: 700;">${nextDayLabel(today)}</div>
     </div>`;
+  } else if (isRaceDay) {
+    // 比赛日全景
+    html = `<div class="${cardClass}">
+      <div class="card-title">🏁 比赛日 · ${sched.dow} · ${sched.date.slice(5)}</div>
+      <div style="margin-bottom: 12px;"><span class="tag tag-race">${tagLabel('race')}</span></div>
+      <div class="big-num">42.2<span class="big-unit">km</span></div>
+      <div style="font-size: 16px; font-weight: 700; margin-top: 6px;">成都马拉松 · 目标 4:30</div>
+      <div class="pace-line">
+        <span><em>配速</em><b>6:24</b></span>
+        <span><em>时长</em><b>270min</b></span>
+        <span><em>区间</em><b>M</b></span>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; line-height: 1.6; opacity: 0.85;">前 10km 6:30 保守起步 | 10-21km 6:20 巡航 | 21-30km 6:15 M 配速 | 30-35km 6:25 撞墙段守住 | 35-42km 6:30 维持不崩</div>
+    </div>`;
+    if (rec) {
+      html += `<div class="card">
+        <div class="card-title">完赛成绩</div>
+        <div class="pace-line">
+          <span><em>距离</em><b>${rec.dist}km</b></span>
+          <span><em>配速</em><b>${rec.pace}</b></span>
+          ${rec.hr ? `<span><em>心率</em><b>${rec.hr}</b></span>` : ''}
+        </div>
+        <div style="margin-top: 12px; font-size: 13px;">${rec.feel} · ${rec.status}</div>
+        ${rec.note ? `<div style="margin-top: 8px; font-size: 12px; color: var(--gray); white-space: pre-wrap;">${rec.note}</div>` : ''}
+      </div>`;
+    }
+    html += `<button class="btn-today" onclick="openModal('${today}')">${rec ? '修改成绩' : '记录完赛'}</button>`;
   } else {
     const statusTag = rec ? (rec.status === '跳过' ? '<span class="tag tag-skip">跳过</span>' : '<span class="tag tag-done">已完成</span>') : '<span class="tag tag-easy">未打卡</span>';
-    html = `<div class="card today-card">
+    html = `<div class="${cardClass}">
       <div class="card-title">${sched.dow} · ${sched.date.slice(5)} · ${tagLabel(sched.tag)}</div>
       <div style="margin-bottom: 12px;">${statusTag}</div>
       <div class="big-num">${sched.km}<span class="big-unit">km</span></div>
@@ -359,9 +454,7 @@ function nextDayLabel(today) {
 
 // ==================== 渲染：课表 ====================
 function renderPlan() {
-  // 自动按 WEEKS 渲染，没定义就按 SCHEDULE 推断
   let groups = WEEKS.length > 0 ? WEEKS.map((w, i) => {
-    const next = WEEKS[i + 1];
     return {
       label: w.label,
       range: w.range,
@@ -386,7 +479,8 @@ function renderPlan() {
     g.days.forEach(d => {
       const rec = records[d.date];
       const statusTag = rec ? (rec.status === '跳过' ? '<span class="tag tag-skip">跳过</span>' : '<span class="tag tag-done">✓</span>') : '';
-      html += `<div class="day-row" onclick="openModal('${d.date}')">
+      const rowClass = d.tag === 'race' ? 'day-row is-race' : 'day-row';
+      html += `<div class="${rowClass}" onclick="openModal('${d.date}')">
         <div class="day-date">${d.date.slice(5)}<small>${d.dow}</small></div>
         <div>
           <div class="day-name"><span class="tag ${tagClass(d.tag)}">${tagLabel(d.tag)}</span> ${d.name}</div>
@@ -398,6 +492,84 @@ function renderPlan() {
     html += '</div>';
   });
   $('planContent').innerHTML = html;
+  
+  // 比赛日分段配速图
+  renderRacePlan();
+  
+  // 糖原食谱
+  renderGlycogen();
+  
+  // 规则
+  renderRules();
+}
+
+function renderRacePlan() {
+  if (!RACE.date) {
+    $('racePlanSection').innerHTML = '';
+    return;
+  }
+  const html = `<div class="race-plan">
+    <h3>🏁 比赛日分段配速 · 目标 4:30:00</h3>
+    <div class="segment">
+      <div class="seg-range">0 - 10 km</div>
+      <div>保守起步，节省体力应对后半程</div>
+      <div class="seg-pace">6:30/km</div>
+    </div>
+    <div class="segment">
+      <div class="seg-range">10 - 21 km</div>
+      <div>找到节奏，进入巡航</div>
+      <div class="seg-pace">6:20/km</div>
+    </div>
+    <div class="segment">
+      <div class="seg-range">21 - 30 km</div>
+      <div>M 配速巡航，体感轻松</div>
+      <div class="seg-pace">6:15/km</div>
+    </div>
+    <div class="segment">
+      <div class="seg-range">30 - 35 km</div>
+      <div>撞墙高发段，配速略降守住</div>
+      <div class="seg-pace">6:25/km</div>
+    </div>
+    <div class="segment">
+      <div class="seg-range">35 - 42.2 km</div>
+      <div>维持即可，不崩盘</div>
+      <div class="seg-pace">6:30/km</div>
+    </div>
+    <div class="segment" style="font-weight:800;border-top:2px solid var(--ink);margin-top:8px;padding-top:12px;">
+      <div class="seg-range">总计</div>
+      <div>平均配速 6:24/km</div>
+      <div class="seg-pace">4:30:00</div>
+    </div>
+  </div>`;
+  $('racePlanSection').innerHTML = html;
+}
+
+function renderGlycogen() {
+  if (!GLYCOGEN.meals || GLYCOGEN.meals.length === 0) {
+    $('glycogenSection').innerHTML = '';
+    return;
+  }
+  let html = `<div class="glycogen-card">
+    <div class="card-title">🍚 ${GLYCOGEN.title || '赛前 3 天糖原补充食谱'}</div>`;
+  GLYCOGEN.meals.forEach(meal => {
+    html += `<div class="meal">${meal}</div>`;
+  });
+  html += `</div>`;
+  $('glycogenSection').innerHTML = html;
+}
+
+function renderRules() {
+  if (!RULES.items || RULES.items.length === 0) {
+    $('rulesSection').innerHTML = '';
+    return;
+  }
+  let html = `<div class="rules-card">
+    <h3>📌 ${RULES.title || '课表执行规则'}</h3>`;
+  RULES.items.forEach(rule => {
+    html += `<div class="rule">${rule}</div>`;
+  });
+  html += `</div>`;
+  $('rulesSection').innerHTML = html;
 }
 
 // ==================== 渲染：数据 ====================
@@ -420,7 +592,6 @@ function renderData() {
     <div class="stat-cell"><div class="num">${iCount}</div><div class="lbl">I 训练</div></div>
   `;
 
-  // 周跑量
   let weeksForBars = WEEKS.length > 0 ? WEEKS : [{ start: SCHEDULE[0]?.date, end: SCHEDULE[SCHEDULE.length - 1]?.date, label: '整月' }];
   const weekKms = weeksForBars.map(w => {
     let km = 0;
@@ -556,7 +727,7 @@ function handleImport(event) {
     }
   };
   reader.readAsText(file);
-  event.target.value = ''; // 重置，允许同名文件再导入
+  event.target.value = '';
 }
 
 // ==================== Tabs ====================
@@ -581,8 +752,7 @@ loadSchedule();
 // ==================== PWA Service Worker ====================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // 加版本号参数，强制更新到 v3（避开 iOS 26 缓存的旧 SW）
-    navigator.serviceWorker.register('sw.js?v=3').catch(err => {
+    navigator.serviceWorker.register('sw.js?v=4').catch(err => {
       console.warn('SW 注册失败:', err);
     });
   });
@@ -596,16 +766,14 @@ window.addEventListener('unhandledrejection', event => {
   console.error('[Promise 拒绝]', event.reason);
 });
 
-// 检测到 schedule.json 加载失败超过 4 秒时，显示引导（v3 SW 一般 1-2s 内完成）
 setTimeout(() => {
   const tc = $('todayContent');
-  // 只在 SCHEDULE 还没加载成功时才触发
   if (SCHEDULE.length === 0 && tc && (tc.innerHTML.includes('载入中') || tc.innerHTML.includes('加载中'))) {
     tc.innerHTML = `
       <div class="card no-data">
         <div style="font-size:18px;font-weight:800;margin-bottom:12px;">⚠️ 加载超时（4s 未返回）</div>
         <div style="font-size:13px;line-height:1.8;color:#666;margin-bottom:12px;">
-          v3 SW 已修复 schedule.json 失败兜底问题。如果你看到这条，说明 SW 还没生效或网络被拦截。
+          SW 已修复 schedule.json 失败兜底问题。如果你看到这条，说明 SW 还没生效或网络被拦截。
         </div>
         <div style="font-size:14px;line-height:1.8;color:#666;">
           <b>快速修复</b>：<br>
