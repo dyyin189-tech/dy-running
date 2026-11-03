@@ -1,4 +1,4 @@
-// dy-running Service Worker · v3
+// dy-running Service Worker · v6
 // 修复：Safari 26 PWA fetch schedule.json 被 SW 兜底成空 {}，导致页面永远"载入中"
 //
 // 变更点（v2 → v3）：
@@ -7,12 +7,20 @@
 //   3. schedule.json 带 ?t= 时间戳的请求直接放行（不拦截）→ 避免 SW 拦截导致缓存污染
 //   4. index.html 检测到 __error__ 会显示「重试」按钮，UI 不再永远卡"载入中"
 //
+// 变更点（v4 → v5）：
+//   1. 缓存版本号 v4 → v5（冬训课表上线；线上原为 v4，必须跳号才能清掉旧 schedule.json 缓存）
+//   2. index.html 注册 sw.js?v=5（远端原为 ?v=4），配合本版本保证新课表在手机主屏生效
+//
+// 变更点（v5 → v6）：
+//   1. 缓存版本号 v5 → v6（课表 v2026-11-03b：新增时段/心率/结构/术语表字段）
+//   2. index.html 注册 sw.js?v=6（配合本版本保证手机主屏拉到新课表）
+//
 // 保留 v2 的修复：
 //   - 只缓存 res.ok === true 的响应（避免缓存 null）
 //   - fetch 出错时 fallback 到 index.html 而不是直接返回 null
 //   - 跳过非 http(s) 协议
 
-const CACHE = 'dy-running-v4';
+const CACHE = 'dy-running-v6';
 const STATIC_ASSETS = [
   './',
   './index.html',
